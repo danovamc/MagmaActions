@@ -1,0 +1,207 @@
+# =====================================================================
+#   ARCHIVO DE ACCIONES PRINCIPAL (actions_info.yml)
+#   Muestra y documenta todos los tipos de acción y tags especiales.
+# =====================================================================
+
+# ---------------------------------------------------------------------
+#   SECCIÓN DE DOCUMENTACIÓN DE TAGS
+# ---------------------------------------------------------------------
+# [CONSOLE]:    Ejecuta un comando de consola. Usa {player} para tareas individuales. Usa {everyone} para Keyalls (activa filtro anti-IP).
+# [MESSAGE]:    Envía mensaje a todos o al jugador específico. Usa '|' para múltiples líneas.
+# [ACTIONBAR]:  Muestra un mensaje en la barra de acción.
+# [TITLE]:      Muestra Título y Subtítulo. Sintaxis: [TITLE] <Título>|<Subtítulo>
+# [SOUND]:      Reproduce un sonido. Sintaxis: [SOUND] <Nombre>|<Volumen>|<Pitch>
+# [DELAY]:      Pausa la secuencia de acciones. Ej: [DELAY] 10s (segundos), [DELAY] 5m (minutos).
+# [RANDOM]:     Ejecuta una acción al azar. Sintaxis: [RANDOM] <Acción A>; <Acción B>
+# {prefix}:     Placeholder para el prefijo configurado en lang.yml.
+# {player}:     Placeholder para el nombre del jugador (usado en TASK_PER_PLAYER).
+# {everyone}:   Placeholder para iterar sobre TODOS los jugadores (usado en Keyalls).
+# ---------------------------------------------------------------------
+
+
+# =====================================================================
+#   ACCIONES PROGRAMADAS (SCHEDULE & TASK)
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# A1: REINICIO DIARIO (TYPE: SCHEDULE)
+#   Se ejecuta automáticamente en horarios específicos.
+# ---------------------------------------------------------------------
+reinicio_diario:
+  type: SCHEDULE
+  time: "04:00" # Horario GMT-6 (múltiples horarios: "04:00;12:00")
+  days: "MONDAY;TUESDAY;WEDNESDAY;THURSDAY;FRIDAY;SATURDAY;SUNDAY" # Opcional, por defecto todos los días
+
+  actions:
+    - "[TITLE] <red><bold>REINICIO PROGRAMADO</bold></red>|<yellow>El servidor reiniciará pronto</yellow>"
+    - "[DELAY] 30s"
+    - "[CONSOLE] save-all flush"
+    - "[CONSOLE] kickall Reinicio, volvemos enseguida."
+    - "[DELAY] 5s"
+    - "[CONSOLE] restart"
+
+# =====================================================================
+#   TAREA POR JUGADOR: RECOMPENSA DE RUPIAS POR TIEMPO DE JUEGO
+# =====================================================================
+rupias_everywhere:
+  type: TASK_PER_PLAYER
+  interval: "60s" # El intervalo de reutilización (cooldown) por jugador.
+  permission: "magmaactions.task.rupias" # Solo se activa para jugadores con este permiso.
+
+  actions:
+    # -----------------------------------------------------------------
+    # Contador de 60 segundos (Visible solo para el jugador afectado)
+    # -----------------------------------------------------------------
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>60 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>59 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>58 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>57 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>56 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>55 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>54 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>53 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>52 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>51 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>50 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>49 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>48 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>47 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>46 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>45 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>44 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>43 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>42 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>41 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>40 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>39 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>38 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>37 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>36 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>35 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>34 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>33 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>32 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>31 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>30 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>29 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>28 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>27 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>26 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>25 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>24 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>23 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>22 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>21 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>20 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>19 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>18 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>17 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>16 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>15 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>14 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>13 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>12 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>11 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>10 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>9 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>8 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>7 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>6 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>5 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>4 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>3 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>2 segundos</yellow>!</white>"
+    - "[DELAY] 1s"
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Recibirás una rupia en <yellow>1 segundo</yellow>!</white>"
+    - "[DELAY] 1s"
+
+    # Recompensa Final (Usa {player} porque es una tarea individual)
+    - "[ACTIONBAR] <color:#FF5858>◆ <b>RUPIAS</color> <dark_gray>➡</dark_gray> <white>¡Has recibido una <yellow>rupia</yellow>!</white>"
+    - "[CONSOLE] rupia give {player} 1 -s"
+    - "[SOUND] BLOCK_AMETHYST_BLOCK_HIT|1|1"
+
+
+# =====================================================================
+#   ACCIONES MANUALES (COMMAND)
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# C1: KEYALL CON RESTRICCIÓN DE IP (TYPE: COMMAND)
+#   Se ejecuta manualmente con: /magmaactions test keyall_evento
+# ---------------------------------------------------------------------
+keyall_evento:
+  type: COMMAND
+  actions:
+    - "[TITLE] <gradient:#00FFD0:#00AAFF>⭐ ¡Keyall Activo! ⭐|¡Revisa tu inventario!"
+    - "[CONSOLE] crates key give {everyone} comun 1"
+    - "[ACTIONBAR] <yellow>¡$50,000 entregados! (Máx. 1 por IP)</yellow>"
+
+# ---------------------------------------------------------------------
+# C2: DEMOSTRACIÓN DE ACCIÓN ALEATORIA (TYPE: COMMAND)
+#   Ejecutar con: /magmaactions test demo_random
+# ---------------------------------------------------------------------
+demo_random:
+  type: COMMAND
+  actions:
+    - "[SOUND] BLOCK_NOTE_BLOCK_CHIME|1|1"
+
+    # Se ejecuta UNA de las dos opciones entre los puntos y comas.
+    - "[RANDOM] [MESSAGE] | <green>Opción A: Recibiste un mensaje verde.; [MESSAGE] | <red>Opción B: Recibiste un mensaje rojo."

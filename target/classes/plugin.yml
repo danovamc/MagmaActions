@@ -1,0 +1,24 @@
+name: MagmaActions
+version: 1.1
+main: us.magmamc.magmaActions.MagmaActions
+api-version: 1.21
+softdepend: [PlaceholderAPI]
+commands:
+  magmaactions:
+    description: Main command for MagmaActions
+    usage: /<command> [reload|test|list]
+    aliases: [ma]
+    permission: magmaactions.command
+permissions:
+  magmaactions.reload:
+    description: Allows reloading the plugin
+    default: op
+  magmaactions.test:
+    description: Allows testing actions
+    default: op
+  magmaactions.list:
+    description: Allows listing all actions
+    default: op
+  magmaactions.command:
+    description: Allows using the magmaactions command
+    default: op

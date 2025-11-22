@@ -1,0 +1,17 @@
+prefix: "<#FF6666><bold>MACTIONS</bold><dark_gray> ➡ <reset>"
+messages:
+  reload: "{prefix}<#9BFF80>Plugin recargado correctamente."
+  command_executed: "{prefix}<#9BFF80>Comando ejecutado correctamente."
+  schedule_triggered: "{prefix}<#9BFF80>Evento programado activado: <#FFFC66>{name}"
+  task_triggered: "{prefix}<#9BFF80>Evento periódico activado: <#FFFC66>{name}"
+  command_triggered: "{prefix}<#9BFF80>Evento de comando activado: <#FFFC66>{name}"
+  error:
+    invalid_command: "{prefix}<#FC5151>Comando inválido. Usa /magmaactions reload"
+    permission: "{prefix}<#FC5151>No tienes permiso para ejecutar este comando."
+    config: "{prefix}<#FC5151>Error al cargar la configuración: <#FFFC66>{error}"
+    test_usage: "{prefix}<#FC5151>Uso incorrecto. Usa /magmaactions test <evento> [jugador/*]"
+    event_not_found: "{prefix}<#FC5151>Evento no encontrado: <#FFFC66>{event}"
+    player_not_found: "{prefix}<#FC5151>Jugador no encontrado: <#FFFC66>{player}"
+    test_executed_all: "{prefix}<#9BFF80>Evento <#FFFC66>{event}<#9BFF80> ejecutado para todos los jugadores."
+    test_executed_player: "{prefix}<#9BFF80>Evento <#FFFC66>{event}<#9BFF80> ejecutado para el jugador <#FFFC66>{player}<#9BFF80>."
+    ip_limit_blocked: "<bold><gradient:#00FFD0:#00AAFF>KEYALL</gradient></bold><dark_gray> ➡ <reset> <gray>No recibiste el premio debido a nuestra política de </gray><#FF6666>1 premio máximo por dirección IP</#FF6666><gray>."
