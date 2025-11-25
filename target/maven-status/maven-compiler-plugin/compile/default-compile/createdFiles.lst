@@ -2,7 +2,9 @@ us\magmamc\magmaActions\ActionManager$1$1.class
 us\magmamc\magmaActions\ActionManager$3.class
 us\magmamc\magmaActions\ActionManager.class
 us\magmamc\magmaActions\PlaceholderManager.class
+us\magmamc\magmaActions\ActionExecutor$1.class
 us\magmamc\magmaActions\CommandHandler.class
+us\magmamc\magmaActions\ActionExecutor$2.class
 us\magmamc\magmaActions\MagmaActions.class
 us\magmamc\magmaActions\ActionManager$2.class
 us\magmamc\magmaActions\ActionExecutor.class

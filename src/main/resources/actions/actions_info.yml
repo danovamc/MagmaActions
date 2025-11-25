@@ -40,6 +40,17 @@ reinicio_diario:
     - "[DELAY] 5s"
     - "[CONSOLE] restart"
 
+# ---------------------------------------------------------------------
+# A2: ANUNCIO PERIÓDICO (TYPE: TASK)
+#   Ejemplo de uso de execute-on-start para evitar spam al reiniciar.
+# ---------------------------------------------------------------------
+anuncio_periodico:
+  type: TASK
+  interval: "10m"
+  execute-on-start: false # false = espera 10 min antes del primer mensaje. true = mensaje inmediato al encender.
+  actions:
+    - "[MESSAGE] <yellow>Este es un recordatorio automático cada 10 minutos."
+
 # =====================================================================
 #   TAREA POR JUGADOR: RECOMPENSA DE RUPIAS POR TIEMPO DE JUEGO
 # =====================================================================

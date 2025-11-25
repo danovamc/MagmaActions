@@ -10,6 +10,9 @@ import net.kyori.adventure.title.Title.Times;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
+
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
@@ -24,7 +27,13 @@ public class ActionExecutor {
         this.plugin = plugin;
     }
 
+    // Sobrecarga para compatibilidad o uso simple
     public void executeActions(List<String> actions, Player specificPlayer) {
+        executeActions(actions, specificPlayer, null);
+    }
+
+    // MÉTODO PRINCIPAL MODIFICADO: Acepta actionKey para el rastreo
+    public void executeActions(List<String> actions, Player specificPlayer, String actionKey) {
         int delayMs = 0;
 
         for(int i = 0; i < actions.size(); ++i) {
@@ -35,16 +44,44 @@ public class ActionExecutor {
                 String delayStr = action.substring(8).trim();
                 delayMs += (int)ActionManager.parseTimeInterval(delayStr);
             } else if (delayMs > 0) {
-                // Se usa 'finalAction' y se maneja el delay
-                Bukkit.getScheduler().runTaskLater(this.plugin, () -> this.processSingleAction(finalAction, specificPlayer), (long)delayMs / 50L);
+                // Usamos BukkitRunnable para poder acceder al ID de la tarea dentro de run()
+                BukkitRunnable task = new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            processSingleAction(finalAction, specificPlayer);
+                        } finally {
+                            // LIMPIEZA: Si se proporcionó una key, eliminamos esta tarea de la lista de pendientes
+                            // porque ya se ejecutó.
+                            if (actionKey != null) {
+                                plugin.getActionManager().removeActiveTask(actionKey, this.getTaskId());
+                            }
+                        }
+                    }
+                };
+
+                // Programar la tarea
+                BukkitTask bukkitTask = task.runTaskLater(this.plugin, (long)delayMs / 50L);
+
+                // REGISTRO: Si se proporcionó una key, guardamos el ID para poder cancelarlo luego
+                if (actionKey != null) {
+                    plugin.getActionManager().addActiveTask(actionKey, bukkitTask.getTaskId());
+                }
+
             } else {
-                // Se usa 'finalAction'
+                // Acciones inmediatas (delay 0)
                 Bukkit.getScheduler().runTask(this.plugin, () -> this.processSingleAction(finalAction, specificPlayer));
             }
         }
     }
 
+    // Sobrecarga para compatibilidad
     public void executeActionsForPlayer(List<String> actions, Player player) {
+        executeActionsForPlayer(actions, player, null);
+    }
+
+    // MÉTODO PARA PLAYER MODIFICADO: Acepta actionKey
+    public void executeActionsForPlayer(List<String> actions, Player player, String actionKey) {
         int delayMs = 0;
 
         for(int i = 0; i < actions.size(); ++i) {
@@ -55,7 +92,26 @@ public class ActionExecutor {
                 String delayStr = action.substring(8).trim();
                 delayMs += (int)ActionManager.parseTimeInterval(delayStr);
             } else if (delayMs > 0) {
-                Bukkit.getScheduler().runTaskLater(this.plugin, () -> this.processSingleAction(finalAction, player), (long)delayMs / 50L);
+
+                BukkitRunnable task = new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            processSingleAction(finalAction, player);
+                        } finally {
+                            if (actionKey != null) {
+                                plugin.getActionManager().removeActiveTask(actionKey, this.getTaskId());
+                            }
+                        }
+                    }
+                };
+
+                BukkitTask bukkitTask = task.runTaskLater(this.plugin, (long)delayMs / 50L);
+
+                if (actionKey != null) {
+                    plugin.getActionManager().addActiveTask(actionKey, bukkitTask.getTaskId());
+                }
+
             } else {
                 Bukkit.getScheduler().runTask(this.plugin, () -> this.processSingleAction(finalAction, player));
             }

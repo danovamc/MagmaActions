@@ -35,6 +35,27 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
                     this.plugin.reload();
                     sender.sendMessage(this.miniMessage.deserialize(this.getMessage("messages.reload")));
                     return true;
+                case "stop":
+                    // NUEVO COMANDO STOP
+                    if (!sender.hasPermission("magmaactions.stop")) {
+                        sender.sendMessage(this.miniMessage.deserialize(this.getMessage("messages.error.permission")));
+                        return true;
+                    }
+                    if (args.length < 2) {
+                        sender.sendMessage(this.miniMessage.deserialize(this.getMessage("messages.error.stop_usage")));
+                        return true;
+                    }
+                    String actionToStop = args[1];
+                    boolean stopped = this.plugin.getActionManager().stopAction(actionToStop);
+                    if (stopped) {
+                        String msg = this.getMessage("messages.action_stopped").replace("{event}", actionToStop);
+                        sender.sendMessage(this.miniMessage.deserialize(msg));
+                    } else {
+                        String msg = this.getMessage("messages.error.no_action_running").replace("{event}", actionToStop);
+                        sender.sendMessage(this.miniMessage.deserialize(msg));
+                    }
+                    return true;
+
                 case "test":
                     if (!sender.hasPermission("magmaactions.test")) {
                         sender.sendMessage(this.miniMessage.deserialize(this.getMessage("messages.error.permission")));
@@ -45,7 +66,6 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
                     } else {
                         String actionKey = args[1];
 
-                        // CORRECCIÓN 1: Verificar la existencia usando la data modular
                         if (!this.plugin.getActionManager().getActionsKeys().contains(actionKey)) {
                             String message = this.getMessage("messages.error.event_not_found").replace("{event}", actionKey);
                             sender.sendMessage(this.miniMessage.deserialize(message));
@@ -54,10 +74,9 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
                             Player targetPlayer = null;
                             boolean allPlayers = false;
 
-                            // Determinar el objetivo de la acción
                             if (args.length > 2) {
                                 if (args[2].equals("*")) {
-                                    allPlayers = true; // Activa la ejecución con filtro anti-IP
+                                    allPlayers = true;
                                 } else {
                                     targetPlayer = Bukkit.getPlayer(args[2]);
                                     if (targetPlayer == null) {
@@ -67,17 +86,14 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
                                     }
                                 }
                             } else if (sender instanceof Player) {
-                                // Si no se especifica jugador, por defecto es el sender
                                 targetPlayer = (Player)sender;
                             }
 
                             if (allPlayers) {
-                                // Ejecuta para TODOS (targetPlayer = null). Esto activa el filtro de IP en ActionExecutor.
                                 this.plugin.getActionManager().executeAction(actionKey, (Player)null);
                                 String message = this.getMessage("messages.error.test_executed_all").replace("{event}", actionKey);
                                 sender.sendMessage(this.miniMessage.deserialize(message));
                             } else {
-                                // Ejecuta para un jugador específico (usando {player} en las acciones).
                                 this.plugin.getActionManager().executeAction(actionKey, targetPlayer);
                                 String message = this.getMessage("messages.error.test_executed_player").replace("{event}", actionKey).replace("{player}", targetPlayer != null ? targetPlayer.getName() : "Console");
                                 sender.sendMessage(this.miniMessage.deserialize(message));
@@ -91,7 +107,6 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
                         sender.sendMessage(this.miniMessage.deserialize(this.getMessage("messages.error.permission")));
                         return true;
                     } else {
-                        // Lógica para listar SOLO las acciones cargadas desde la carpeta.
                         List<String> actionKeys = new ArrayList<>(this.plugin.getActionManager().getActionsKeys());
 
                         sender.sendMessage(this.miniMessage.deserialize("<yellow>--- Configured Actions ({count}) ---</yellow>".replace("{count}", String.valueOf(actionKeys.size()))));
@@ -102,7 +117,6 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
                         }
 
                         for(String key : actionKeys) {
-                            // Usamos el ConfigurationSection guardado para obtener el tipo de acción
                             ConfigurationSection section = this.plugin.getActionManager().getActionConfigSection(key);
 
                             String type = section != null ? section.getString("type", "unknown") : "unknown";
@@ -124,7 +138,6 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
                                         break;
                                 }
                             }
-                            // Usamos MiniMessage para el formato de salida
                             sender.sendMessage(this.miniMessage.deserialize("<aqua>" + key + "</aqua> - <green>" + type + "</green> (<gray>" + details + "</gray>)"));
                         }
 
@@ -168,21 +181,24 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
             completions.add("reload");
             completions.add("test");
             completions.add("list");
+            completions.add("stop");
             return this.filterCompletions(completions, args[0]);
         } else if (args.length == 2 && args[0].equalsIgnoreCase("test")) {
-            // CORRECCIÓN 3: Usar getActionsKeys() para tabulación
             for(String key : this.plugin.getActionManager().getActionsKeys()) {
                 completions.add(key);
             }
-
+            return this.filterCompletions(completions, args[1]);
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("stop")) {
+            // NUEVO: Tab completion para acciones en curso
+            for(String key : this.plugin.getActionManager().getRunningActionKeys()) {
+                completions.add(key);
+            }
             return this.filterCompletions(completions, args[1]);
         } else if (args.length == 3 && args[0].equalsIgnoreCase("test")) {
             completions.add("*");
-
             for(Player player : Bukkit.getOnlinePlayers()) {
                 completions.add(player.getName());
             }
-
             return this.filterCompletions(completions, args[2]);
         } else {
             return completions;
@@ -194,13 +210,11 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
             return completions;
         } else {
             List<String> filteredCompletions = new ArrayList();
-
             for(String completion : completions) {
                 if (completion.toLowerCase().startsWith(currentArg.toLowerCase())) {
                     filteredCompletions.add(completion);
                 }
             }
-
             return filteredCompletions;
         }
     }

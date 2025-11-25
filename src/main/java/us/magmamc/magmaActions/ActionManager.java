@@ -12,6 +12,7 @@ import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -38,6 +39,9 @@ public class ActionManager {
     private final Map<String, Integer> activeBukkitTasks = new HashMap<>();
     private final Map<String, Timer> activeTimers = new HashMap<>();
 
+    // NUEVO: Mapa para rastrear secuencias activas (ActionKey -> Set de TaskIDs)
+    private final Map<String, Set<Integer>> activeSequences = new ConcurrentHashMap<>();
+
     private final ActionExecutor actionExecutor;
     private Timer timer;
     private Set<String> worldBlacklist = new HashSet();
@@ -56,9 +60,10 @@ public class ActionManager {
 
         this.actionsMap.clear();
         this.actionConfigs.clear();
+        this.activeSequences.clear(); // Limpiar secuencias
 
         this.timer = new Timer();
-        this.loadWorldBlacklist(); // Ahora es seguro llamar a este método
+        this.loadWorldBlacklist();
 
         File[] actionFiles = this.actionsFolder.listFiles((dir, name) -> name.endsWith(".yml"));
 
@@ -101,7 +106,8 @@ public class ActionManager {
                                 break;
                             case "TASK":
                                 String interval = section.getString("interval", "1m");
-                                this.scheduleIntervalAction(key, interval, actionsList);
+                                boolean executeOnStart = section.getBoolean("execute-on-start", true);
+                                this.scheduleIntervalAction(key, interval, actionsList, executeOnStart);
                                 break;
                             case "TASK_PER_PLAYER":
                                 String playerInterval = section.getString("interval", "1m");
@@ -117,11 +123,7 @@ public class ActionManager {
 
     private void loadWorldBlacklist() {
         this.worldBlacklist.clear();
-
-        // ACCESO RÁPIDO Y SEGURO A LA CONFIGURACIÓN DEL PLUGIN PRINCIPAL
         FileConfiguration configSource = this.plugin.getConfig();
-
-        // Si la configuración es NULL (no debería pasar si onEnable está bien), salimos.
         if (configSource == null) {
             this.plugin.getLogger().severe("Error: La configuración principal (config.yml) es NULL al leer la World Blacklist.");
             return;
@@ -130,23 +132,13 @@ public class ActionManager {
         String blacklistStr = configSource.getString("world-blacklist", "");
 
         if (!blacklistStr.isEmpty()) {
-            if (blacklistStr.startsWith("*")) {
-                blacklistStr = blacklistStr.substring(1);
-            }
-
-            if (blacklistStr.endsWith("*")) {
-                blacklistStr = blacklistStr.substring(0, blacklistStr.length() - 1);
-            }
-
+            if (blacklistStr.startsWith("*")) blacklistStr = blacklistStr.substring(1);
+            if (blacklistStr.endsWith("*")) blacklistStr = blacklistStr.substring(0, blacklistStr.length() - 1);
             String[] worlds = blacklistStr.split("/");
-
             for(String world : worlds) {
-                if (!world.trim().isEmpty()) {
-                    this.worldBlacklist.add(world.trim());
-                }
+                if (!world.trim().isEmpty()) this.worldBlacklist.add(world.trim());
             }
         }
-
         this.plugin.getLogger().info("World blacklist loaded: " + this.worldBlacklist.toString());
     }
 
@@ -157,42 +149,20 @@ public class ActionManager {
     private Set<Integer> parseDays(String daysStr) {
         Set<Integer> days = new HashSet();
         String[] dayArray = daysStr.split(";");
-
         for(String day : dayArray) {
             switch (day.trim().toUpperCase()) {
-                case "MONDAY":
-                    days.add(2);
-                    break;
-                case "TUESDAY":
-                    days.add(3);
-                    break;
-                case "WEDNESDAY":
-                    days.add(4);
-                    break;
-                case "THURSDAY":
-                    days.add(5);
-                    break;
-                case "FRIDAY":
-                    days.add(6);
-                    break;
-                case "SATURDAY":
-                    days.add(7);
-                    break;
-                case "SUNDAY":
-                    days.add(1);
+                case "MONDAY": days.add(2); break;
+                case "TUESDAY": days.add(3); break;
+                case "WEDNESDAY": days.add(4); break;
+                case "THURSDAY": days.add(5); break;
+                case "FRIDAY": days.add(6); break;
+                case "SATURDAY": days.add(7); break;
+                case "SUNDAY": days.add(1); break;
             }
         }
-
         if (days.isEmpty()) {
-            days.add(2);
-            days.add(3);
-            days.add(4);
-            days.add(5);
-            days.add(6);
-            days.add(7);
-            days.add(1);
+            days.add(2); days.add(3); days.add(4); days.add(5); days.add(6); days.add(7); days.add(1);
         }
-
         return days;
     }
 
@@ -220,7 +190,9 @@ public class ActionManager {
             TimerTask task = new TimerTask() {
                 public void run() {
                     try {
-                        ActionManager.this.actionExecutor.executeActions(actions, (Player)null);
+                        // PASAMOS LA KEY para rastreo
+                        ActionManager.this.actionExecutor.executeActions(actions, (Player)null, key);
+
                         Calendar nextRun = Calendar.getInstance(TimeZone.getTimeZone("GMT-6"));
                         nextRun.setTimeInMillis(calendar.getTimeInMillis());
                         nextRun.add(5, 1);
@@ -232,17 +204,15 @@ public class ActionManager {
                         ActionManager.this.nextExecutionTimes.put(taskId, nextRun.getTimeInMillis());
                         TimerTask nextTask = new TimerTask() {
                             public void run() {
-                                ActionManager.this.actionExecutor.executeActions(actions, (Player)null);
+                                // PASAMOS LA KEY para rastreo
+                                ActionManager.this.actionExecutor.executeActions(actions, (Player)null, key);
                             }
                         };
                         ActionManager.this.timer.schedule(nextTask, nextRun.getTime());
                         ActionManager.this.scheduledTasks.put(taskId, nextTask);
                     } catch (Exception e) {
-                        Logger var10000 = ActionManager.this.plugin.getLogger();
-                        String var10001 = key;
-                        var10000.warning("Error executing scheduled task for " + var10001 + ": " + e.getMessage());
+                        ActionManager.this.plugin.getLogger().warning("Error executing scheduled task for " + key + ": " + e.getMessage());
                     }
-
                 }
             };
             this.timer.schedule(task, calendar.getTime());
@@ -253,37 +223,36 @@ public class ActionManager {
         } catch (Exception e) {
             this.plugin.getLogger().warning("Failed to schedule time action for " + key + ": " + e.getMessage());
         }
-
     }
 
-    private void scheduleIntervalAction(final String key, String intervalStr, final List<String> actions) {
+    private void scheduleIntervalAction(final String key, String intervalStr, final List<String> actions, boolean executeOnStart) {
         try {
             final long intervalMs = parseTimeInterval(intervalStr);
             final long intervalTicks = msToTicks(intervalMs);
+
             this.nextExecutionTimes.put(key, System.currentTimeMillis() + intervalMs);
 
-            // 1. CANCELAR TAREA ANTERIOR del Bukkit Scheduler
             if (this.activeBukkitTasks.containsKey(key)) {
                 Bukkit.getScheduler().cancelTask(this.activeBukkitTasks.get(key));
             }
 
-            // 2. CREAR NUEVA TAREA ASÍNCRONA (TASK)
+            long initialDelay = executeOnStart ? 0L : intervalTicks;
+
             int taskId = Bukkit.getScheduler().runTaskTimerAsynchronously(this.plugin, new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        ActionManager.this.actionExecutor.executeActions(actions, (Player)null);
+                        // PASAMOS LA KEY para rastreo
+                        ActionManager.this.actionExecutor.executeActions(actions, (Player)null, key);
                         ActionManager.this.nextExecutionTimes.put(key, System.currentTimeMillis() + intervalMs);
                     } catch (Exception e) {
                         ActionManager.this.plugin.getLogger().warning("Error executing interval task for " + key + ": " + e.getMessage());
                     }
                 }
-            }, 0L, intervalTicks).getTaskId(); // INICIO INMEDIATO (0L)
+            }, initialDelay, intervalTicks).getTaskId();
 
-            // 3. GUARDAR ID de la tarea
             this.activeBukkitTasks.put(key, taskId);
-
-            this.plugin.getLogger().info("Scheduled Bukkit TASK action for " + key + " every " + intervalStr);
+            this.plugin.getLogger().info("Scheduled Bukkit TASK action for " + key + " every " + intervalStr + " (Start: " + executeOnStart + ")");
         } catch (Exception e) {
             this.plugin.getLogger().warning("Failed to schedule interval action for " + key + ": " + e.getMessage());
         }
@@ -292,16 +261,14 @@ public class ActionManager {
     private void schedulePlayerIntervalAction(final String key, String intervalStr, final List<String> actions) {
         try {
             final long intervalMs = parseTimeInterval(intervalStr);
-            final long intervalTicks = msToTicks(5000L); // Chequea cada 5 segundos
+            final long intervalTicks = msToTicks(5000L);
 
             this.playerTaskTimes.put(key, new HashMap());
 
-            // 1. CANCELAR TAREA ANTERIOR del Bukkit Scheduler
             if (this.activeBukkitTasks.containsKey(key)) {
                 Bukkit.getScheduler().cancelTask(this.activeBukkitTasks.get(key));
             }
 
-            // 2. CREAR NUEVA TAREA ASÍNCRONA (TASK_PER_PLAYER)
             int taskId = Bukkit.getScheduler().runTaskTimerAsynchronously(this.plugin, new Runnable() {
                 @Override
                 public void run() {
@@ -310,7 +277,6 @@ public class ActionManager {
                         Map<UUID, Long> taskTimes = ActionManager.this.playerTaskTimes.get(key);
                         long currentTime = System.currentTimeMillis();
 
-                        // LECTURA CORREGIDA para obtener el permiso
                         ConfigurationSection section = ActionManager.this.getActionConfigSection(key);
                         String permission = section != null ? section.getString("permission", (String)null) : null;
 
@@ -324,11 +290,11 @@ public class ActionManager {
                                     Long lastExecution = taskTimes.get(playerId);
                                     if (lastExecution == null || currentTime - lastExecution >= intervalMs) {
 
-                                        // EJECUTAR COMANDOS EN EL HILO PRINCIPAL (NECESARIO PARA BUKKIT API)
                                         Bukkit.getScheduler().runTask(ActionManager.this.plugin, () -> {
                                             try {
                                                 if (player.isOnline()) {
-                                                    ActionManager.this.actionExecutor.executeActionsForPlayer(actions, player);
+                                                    // PASAMOS LA KEY para rastreo
+                                                    ActionManager.this.actionExecutor.executeActionsForPlayer(actions, player, key);
                                                 }
                                             } catch (Exception e) {
                                                 ActionManager.this.plugin.getLogger().warning("Error executing action for player " + player.getName() + " in task " + key + ": " + e.getMessage());
@@ -343,7 +309,6 @@ public class ActionManager {
                                 e.printStackTrace();
                             }
                         }
-                        // ... (lógica de limpieza)
                         taskTimes.entrySet().removeIf((entry) -> {
                             try {
                                 Player player = Bukkit.getPlayer((UUID)entry.getKey());
@@ -358,23 +323,60 @@ public class ActionManager {
                         e.printStackTrace();
                     }
                 }
-            }, 0L, intervalTicks).getTaskId(); // INICIO INMEDIATO (0L)
+            }, 0L, intervalTicks).getTaskId();
 
-            // 3. GUARDAR ID de la tarea
             this.activeBukkitTasks.put(key, taskId);
-
             this.plugin.getLogger().info("Scheduled Bukkit TASK_PER_PLAYER action for " + key + " every " + intervalStr + " per player");
         } catch (Exception e) {
             this.plugin.getLogger().warning("Failed to schedule player interval action for " + key + ": " + e.getMessage());
             e.printStackTrace();
         }
-
     }
+
+    // --- MÉTODOS FALTANTES QUE CAUSABAN EL ERROR ---
+
+    public void addActiveTask(String actionKey, int taskId) {
+        this.activeSequences.computeIfAbsent(actionKey, k -> ConcurrentHashMap.newKeySet()).add(taskId);
+    }
+
+    public void removeActiveTask(String actionKey, int taskId) {
+        if (this.activeSequences.containsKey(actionKey)) {
+            Set<Integer> tasks = this.activeSequences.get(actionKey);
+            if (tasks != null) {
+                tasks.remove(taskId);
+            }
+        }
+    }
+
+    public boolean stopAction(String actionKey) {
+        if (this.activeSequences.containsKey(actionKey)) {
+            Set<Integer> tasks = this.activeSequences.get(actionKey);
+            if (tasks != null && !tasks.isEmpty()) {
+                int count = 0;
+                for (Integer taskId : tasks) {
+                    if (Bukkit.getScheduler().isQueued(taskId) || Bukkit.getScheduler().isCurrentlyRunning(taskId)) {
+                        Bukkit.getScheduler().cancelTask(taskId);
+                        count++;
+                    }
+                }
+                tasks.clear();
+                this.activeSequences.remove(actionKey);
+                this.plugin.getLogger().info("Stopped " + count + " pending tasks for action: " + actionKey);
+                return count > 0;
+            }
+        }
+        return false;
+    }
+
+    public Set<String> getRunningActionKeys() {
+        return new HashSet<>(this.activeSequences.keySet());
+    }
+
+    // ----------------------------------------------
 
     public void cancelAllTasks() {
         this.plugin.getLogger().info("Iniciando cancelación de todas las tareas activas de MagmaActions...");
 
-        // 1. CANCELAR TAREAS REPETITIVAS (TASK/TASK_PER_PLAYER) DEL BUKKIT SCHEDULER
         for (String key : this.activeBukkitTasks.keySet()) {
             int taskId = this.activeBukkitTasks.get(key);
             Bukkit.getScheduler().cancelTask(taskId);
@@ -382,12 +384,11 @@ public class ActionManager {
         this.activeBukkitTasks.clear();
         this.plugin.getLogger().info("Tareas TASK/TASK_PER_PLAYER del Bukkit Scheduler canceladas.");
 
-        // 2. CANCELAR TODAS LAS SECUENCIAS DE [DELAY] Y TAREAS FUTURAS PENDIENTES
-        // ESTA ES LA CLAVE PARA DETENER LA SECUENCIA DE RUPÍAS INTERNA.
         Bukkit.getScheduler().cancelTasks(this.plugin);
         this.plugin.getLogger().info("Secuencias internas de [DELAY] canceladas.");
 
-        // 2. Cancelar TimerTask de SCHEDULE (usan el timer global)
+        this.activeSequences.clear();
+
         for(TimerTask task : this.scheduledTasks.values()) {
             if (task != null) {
                 task.cancel();
@@ -395,7 +396,6 @@ public class ActionManager {
         }
         this.scheduledTasks.clear();
 
-        // 3. Cancelar Timers individuales de activeTimers (solo por seguridad, aunque ya no deberían usarse para repetición)
         for (Timer timer : this.activeTimers.values()) {
             if (timer != null) {
                 timer.cancel();
@@ -404,8 +404,6 @@ public class ActionManager {
         }
         this.activeTimers.clear();
 
-
-        // 4. Cancelar el Timer global (usado para SCHEDULE)
         if (this.timer != null) {
             this.timer.cancel();
             this.timer.purge();
@@ -414,13 +412,11 @@ public class ActionManager {
     }
 
     public void executeAction(String actionKey, Player targetPlayer) {
-        // CORREGIDO: Busca la acción en el mapa, NO en el config.yml
         List<String> actions = this.getActions(actionKey);
-
         if (actions != null) {
-            this.actionExecutor.executeActions(actions, targetPlayer);
+            // PASAMOS LA KEY para rastreo
+            this.actionExecutor.executeActions(actions, targetPlayer, actionKey);
         } else {
-            // Mejoramos el mensaje de error si no se encuentra la acción
             this.plugin.getLogger().warning("Action key '" + actionKey + "' not found in loaded actions.");
         }
     }
@@ -431,25 +427,16 @@ public class ActionManager {
         if (matcher.matches()) {
             int amount = Integer.parseInt(matcher.group(1));
             switch (matcher.group(2)) {
-                case "s" -> {
-                    return TimeUnit.SECONDS.toMillis((long)amount);
-                }
-                case "m" -> {
-                    return TimeUnit.MINUTES.toMillis((long)amount);
-                }
-                case "h" -> {
-                    return TimeUnit.HOURS.toMillis((long)amount);
-                }
-                default -> {
-                    return 60000L;
-                }
+                case "s" -> { return TimeUnit.SECONDS.toMillis((long)amount); }
+                case "m" -> { return TimeUnit.MINUTES.toMillis((long)amount); }
+                case "h" -> { return TimeUnit.HOURS.toMillis((long)amount); }
+                default -> { return 60000L; }
             }
         } else {
             return 60000L;
         }
     }
 
-    // Nuevo método auxiliar para convertir milisegundos a Ticks de Bukkit
     private long msToTicks(long ms) {
         return ms / 50;
     }
@@ -473,9 +460,7 @@ public class ActionManager {
             if (lastExecution == null) {
                 return "Ready";
             } else {
-                // CORREGIDO: Debe usar getActionConfigSection para la configuración modular.
                 ConfigurationSection section = this.getActionConfigSection(taskId);
-
                 if (section == null) {
                     return "Unknown";
                 } else {
@@ -508,65 +493,16 @@ public class ActionManager {
             } else {
                 result.append(seconds).append("s");
             }
-
             return result.toString();
         }
     }
 
-    public Set<String> getTaskIds() {
-        return this.nextExecutionTimes.keySet();
-    }
-
-    /**
-     * Devuelve las claves de las tareas por jugador.
-     */
-    public Set<String> getPlayerTaskIds() {
-        return this.playerTaskTimes.keySet();
-    }
-
-    public Set<String> getWorldBlacklist() {
-        return new HashSet(this.worldBlacklist);
-    }
-
-    // MÉTODOS DE ACCESO PARA OTRAS CLASES (CommandHandler y PlaceholderManager)
-
-    /**
-     * Devuelve todas las claves de acción cargadas (SCHEDULE, TASK, COMMAND, etc.).
-     * Usado para /ma test y /ma list.
-     */
-    public Set<String> getActionsKeys() {
-        return this.actionsMap.keySet();
-    }
-
-    /**
-     * Devuelve las claves de las acciones cargadas como una Lista (conveniente para Listas/TabCompleter).
-     */
-    public List<String> getLoadedActionNames() {
-        return new ArrayList<>(this.actionsMap.keySet());
-    }
-
-    /**
-     * Obtiene la lista de comandos (actions List<String>) para ejecutar.
-     * Usado por ActionExecutor.
-     */
-    public List<String> getActions(String actionKey) {
-        return this.actionsMap.get(actionKey);
-    }
-
-    /**
-     * Obtiene la sección de configuración completa de una acción.
-     * Usado por PlaceholderManager para calcular SCHEDULE y por tareas TASK_PER_PLAYER.
-     */
-    public ConfigurationSection getActionConfigSection(String key) {
-        return this.actionConfigs.get(key);
-    }
-
-    /**
-     * Comprueba si existe una tarea repetitiva activa (TASK o TASK_PER_PLAYER)
-     * en el Bukkit Scheduler.
-     * * NOTA: Este método es nuevo y podría ser útil para depuración.
-     */
-    public boolean isBukkitTaskActive(String key) {
-        return this.activeBukkitTasks.containsKey(key);
-    }
+    public Set<String> getTaskIds() { return this.nextExecutionTimes.keySet(); }
+    public Set<String> getPlayerTaskIds() { return this.playerTaskTimes.keySet(); }
+    public Set<String> getWorldBlacklist() { return new HashSet(this.worldBlacklist); }
+    public Set<String> getActionsKeys() { return this.actionsMap.keySet(); }
+    public List<String> getLoadedActionNames() { return new ArrayList<>(this.actionsMap.keySet()); }
+    public List<String> getActions(String actionKey) { return this.actionsMap.get(actionKey); }
+    public ConfigurationSection getActionConfigSection(String key) { return this.actionConfigs.get(key); }
+    public boolean isBukkitTaskActive(String key) { return this.activeBukkitTasks.containsKey(key); }
 }

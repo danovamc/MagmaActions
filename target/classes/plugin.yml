@@ -6,7 +6,7 @@ softdepend: [PlaceholderAPI]
 commands:
   magmaactions:
     description: Main command for MagmaActions
-    usage: /<command> [reload|test|list]
+    usage: /<command> [reload|test|list|stop]
     aliases: [ma]
     permission: magmaactions.command
 permissions:
@@ -18,6 +18,9 @@ permissions:
     default: op
   magmaactions.list:
     description: Allows listing all actions
+    default: op
+  magmaactions.stop:
+    description: Allows stopping running actions
     default: op
   magmaactions.command:
     description: Allows using the magmaactions command
